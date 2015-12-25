@@ -9,10 +9,10 @@
 #include "PolyVox/CubicSurfaceExtractor.h"
 #include "PolyVox/MarchingCubesSurfaceExtractor.h"
 #include "PolyVox/Mesh.h"
-#include "PolyVox/SimpleVolume.h"
+#include "PolyVox/PagedVolume.h"
 
 using namespace PolyVox;
-void createSphereInVolume(SimpleVolume<uint8_t>& volData, float fRadius)
+void createSphereInVolume(PagedVolume<uint8_t>& volData, float fRadius)
 {
 	//This vector hold the position of the center of the volume
 	Vector3DFloat v3dVolCenter(volData.getWidth() / 2, volData.getHeight() / 2, volData.getDepth() / 2);
@@ -49,7 +49,7 @@ namespace anl
 {
 	void marchDensityFieldSmoothOBJ(CArray3Dd &df, float iso, std::string name)
 	{
-		SimpleVolume<float> volData(PolyVox::Region(Vector3DInt32(0,0,0), Vector3DInt32(df.width(), df.height(), df.depth())));
+		PagedVolume<float> volData(PolyVox::Region(Vector3DInt32(0,0,0), Vector3DInt32(df.width(), df.height(), df.depth())));
 		//createSphereInVolume(volData, 30);
 		
 		// Copy df into volData
@@ -71,8 +71,8 @@ namespace anl
 		Mesh<PositionMaterialNormal> mesh;
 
 		//Create a surface extractor. Comment out one of the following two lines to decide which type gets created.
-		//CubicSurfaceExtractorWithNormals< SimpleVolume<uint8_t> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh);
-		MarchingCubesSurfaceExtractor< SimpleVolume<float>, DefaultMarchingCubesController<float> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh, DefaultMarchingCubesController<float>(iso));
+		//CubicSurfaceExtractorWithNormals< PagedVolume<uint8_t> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh);
+		MarchingCubesSurfaceExtractor< PagedVolume<float>, DefaultMarchingCubesController<float> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh, DefaultMarchingCubesController<float>(iso));
 
 		//Execute the surface extractor.
 		surfaceExtractor.execute();
@@ -102,7 +102,7 @@ namespace anl
 	
 	void marchDensityFieldCubeOBJ(CArray3Dd &df, float iso, std::string name)
 	{
-		SimpleVolume<uint8_t> volData(PolyVox::Region(Vector3DInt32(0,0,0), Vector3DInt32(df.width(), df.height(), df.depth())));
+		PagedVolume<uint8_t> volData(PolyVox::Region(Vector3DInt32(0,0,0), Vector3DInt32(df.width(), df.height(), df.depth())));
 		//createSphereInVolume(volData, 30);
 		
 		// Copy df into volData
@@ -124,8 +124,8 @@ namespace anl
 		Mesh<PositionMaterialNormal> mesh;
 
 		//Create a surface extractor. Comment out one of the following two lines to decide which type gets created.
-		CubicSurfaceExtractorWithNormals< SimpleVolume<uint8_t> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh);
-		//MarchingCubesSurfaceExtractor< SimpleVolume<float>, DefaultMarchingCubesController<float> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh, DefaultMarchingCubesController<float>(iso));
+		CubicSurfaceExtractorWithNormals< PagedVolume<uint8_t> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh);
+		//MarchingCubesSurfaceExtractor< PagedVolume<float>, DefaultMarchingCubesController<float> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh, DefaultMarchingCubesController<float>(iso));
 
 		//Execute the surface extractor.
 		surfaceExtractor.execute();
@@ -155,7 +155,7 @@ namespace anl
 	
 	void marchDensityFieldSmooth(CArray3Dd &df, float iso, CMesh &m)
 	{
-		SimpleVolume<float> volData(PolyVox::Region(Vector3DInt32(0,0,0), Vector3DInt32(df.width(), df.height(), df.depth())));
+		PagedVolume<float> volData(PolyVox::Region(Vector3DInt32(0,0,0), Vector3DInt32(df.width(), df.height(), df.depth())));
 		//createSphereInVolume(volData, 30);
 		
 		// Copy df into volData
@@ -177,8 +177,8 @@ namespace anl
 		Mesh<PositionMaterialNormal> mesh;
 
 		//Create a surface extractor. Comment out one of the following two lines to decide which type gets created.
-		//CubicSurfaceExtractorWithNormals< SimpleVolume<uint8_t> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh);
-		MarchingCubesSurfaceExtractor< SimpleVolume<float>, DefaultMarchingCubesController<float> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh, DefaultMarchingCubesController<float>(iso));
+		//CubicSurfaceExtractorWithNormals< PagedVolume<uint8_t> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh);
+		MarchingCubesSurfaceExtractor< PagedVolume<float>, DefaultMarchingCubesController<float> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh, DefaultMarchingCubesController<float>(iso));
 
 		//Execute the surface extractor.
 		surfaceExtractor.execute();
@@ -204,7 +204,7 @@ namespace anl
 	
 	void marchDensityFieldCube(CArray3Dd &df, float iso, CMesh &m)
 	{
-		SimpleVolume<uint8_t> volData(PolyVox::Region(Vector3DInt32(0,0,0), Vector3DInt32(df.width(), df.height(), df.depth())));
+		PagedVolume<uint8_t> volData(PolyVox::Region(Vector3DInt32(0,0,0), Vector3DInt32(df.width(), df.height(), df.depth())));
 		//createSphereInVolume(volData, 30);
 		
 		// Copy df into volData
@@ -226,8 +226,8 @@ namespace anl
 		Mesh<PositionMaterialNormal> mesh;
 
 		//Create a surface extractor. Comment out one of the following two lines to decide which type gets created.
-		CubicSurfaceExtractorWithNormals< SimpleVolume<uint8_t> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh);
-		//MarchingCubesSurfaceExtractor< SimpleVolume<float>, DefaultMarchingCubesController<float> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh, DefaultMarchingCubesController<float>(iso));
+		CubicSurfaceExtractorWithNormals< PagedVolume<uint8_t> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh);
+		//MarchingCubesSurfaceExtractor< PagedVolume<float>, DefaultMarchingCubesController<float> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh, DefaultMarchingCubesController<float>(iso));
 
 		//Execute the surface extractor.
 		surfaceExtractor.execute();
