@@ -8,7 +8,7 @@
 
 #include "PolyVox/CubicSurfaceExtractor.h"
 #include "PolyVox/MarchingCubesSurfaceExtractor.h"
-#include "PolyVox/SurfaceMesh.h"
+#include "PolyVox/Mesh.h"
 #include "PolyVox/SimpleVolume.h"
 
 using namespace PolyVox;
@@ -68,7 +68,7 @@ namespace anl
 		volData.setBorderValue(0.0f);
 
 		//A mesh object to hold the result of surface extraction
-		SurfaceMesh<PositionMaterialNormal> mesh;
+		Mesh<PositionMaterialNormal> mesh;
 
 		//Create a surface extractor. Comment out one of the following two lines to decide which type gets created.
 		//CubicSurfaceExtractorWithNormals< SimpleVolume<uint8_t> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh);
@@ -121,7 +121,7 @@ namespace anl
 		volData.setBorderValue(0.0f);
 
 		//A mesh object to hold the result of surface extraction
-		SurfaceMesh<PositionMaterialNormal> mesh;
+		Mesh<PositionMaterialNormal> mesh;
 
 		//Create a surface extractor. Comment out one of the following two lines to decide which type gets created.
 		CubicSurfaceExtractorWithNormals< SimpleVolume<uint8_t> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh);
@@ -174,7 +174,7 @@ namespace anl
 		volData.setBorderValue(0.0f);
 
 		//A mesh object to hold the result of surface extraction
-		SurfaceMesh<PositionMaterialNormal> mesh;
+		Mesh<PositionMaterialNormal> mesh;
 
 		//Create a surface extractor. Comment out one of the following two lines to decide which type gets created.
 		//CubicSurfaceExtractorWithNormals< SimpleVolume<uint8_t> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh);
@@ -223,7 +223,7 @@ namespace anl
 		volData.setBorderValue(0.0f);
 
 		//A mesh object to hold the result of surface extraction
-		SurfaceMesh<PositionMaterialNormal> mesh;
+		Mesh<PositionMaterialNormal> mesh;
 
 		//Create a surface extractor. Comment out one of the following two lines to decide which type gets created.
 		CubicSurfaceExtractorWithNormals< SimpleVolume<uint8_t> > surfaceExtractor(&volData, volData.getEnclosingRegion(), &mesh);
