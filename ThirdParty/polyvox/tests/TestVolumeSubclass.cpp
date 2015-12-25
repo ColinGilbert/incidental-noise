@@ -23,11 +23,12 @@ freely, subject to the following restrictions:
 
 #include "TestVolumeSubclass.h"
 
-#include "PolyVoxCore/Array.h"
-#include "PolyVoxCore/BaseVolume.h"
-#include "PolyVoxCore/CubicSurfaceExtractor.h"
-#include "PolyVoxCore/Material.h"
-#include "PolyVoxCore/Vector.h"
+#include "PolyVox/Array.h"
+
+#include "PolyVox/BaseVolume.h"
+#include "PolyVox/CubicSurfaceExtractor.h"
+#include "PolyVox/Material.h"
+#include "PolyVox/Vector.h"
 
 #include <QtTest>
 
@@ -61,38 +62,45 @@ public:
 
 	/// Constructor for creating a fixed size volume.
 	VolumeSubclass(const Region& regValid)
-		:BaseVolume<VoxelType>(regValid)
+		:BaseVolume<VoxelType>()
+		, mVolumeData(regValid.getWidthInVoxels(), regValid.getHeightInVoxels(), regValid.getDepthInVoxels())
 	{
-		mVolumeData.resize(ArraySizes(this->getWidth())(this->getHeight())(this->getDepth()));
+		//mVolumeData.resize(ArraySizes(this->getWidth())(this->getHeight())(this->getDepth()));
 	}
 	/// Destructor
 	~VolumeSubclass() {};
 
-	/// Gets the value used for voxels which are outside the volume
-	VoxelType getBorderValue(void) const { return 0; }
 	/// Gets a voxel at the position given by <tt>x,y,z</tt> coordinates
-	VoxelType getVoxelAt(int32_t uXPos, int32_t uYPos, int32_t uZPos) const
+	VoxelType getVoxel(int32_t uXPos, int32_t uYPos, int32_t uZPos) const
 	{
-		if(this->m_regValidRegion.containsPoint(Vector3DInt32(uXPos, uYPos, uZPos)))
+		if ((uXPos >= 0) && (uXPos < static_cast<int32_t>(mVolumeData.getDimension(0))) &&
+			(uYPos >= 0) && (uYPos < static_cast<int32_t>(mVolumeData.getDimension(1))) &&
+			(uZPos >= 0) && (uZPos < static_cast<int32_t>(mVolumeData.getDimension(2))))
 		{
-			return mVolumeData[uXPos][uYPos][uZPos];
+			return mVolumeData(uXPos, uYPos, uZPos);
 		}
 		else
 		{
-			return getBorderValue();
+			return VoxelType();
 		}
 	}
+
 	/// Gets a voxel at the position given by a 3D vector
-	VoxelType getVoxelAt(const Vector3DInt32& v3dPos) const { return getVoxelAt(v3dPos.getX(), v3dPos.getY(), v3dPos.getZ()); }
+	VoxelType getVoxel(const Vector3DInt32& v3dPos) const
+	{
+		return getVoxel(v3dPos.getX(), v3dPos.getY(), v3dPos.getZ());
+	}
 
 	/// Sets the value used for voxels which are outside the volume
 	void setBorderValue(const VoxelType& tBorder) { }
 	/// Sets the voxel at the position given by <tt>x,y,z</tt> coordinates
-	bool setVoxelAt(int32_t uXPos, int32_t uYPos, int32_t uZPos, VoxelType tValue)
+	bool setVoxel(int32_t uXPos, int32_t uYPos, int32_t uZPos, VoxelType tValue)
 	{
-		if(this->m_regValidRegion.containsPoint(Vector3DInt32(uXPos, uYPos, uZPos)))
+		if( (uXPos >= 0) && (uXPos < static_cast<int32_t>(mVolumeData.getDimension(0))) &&
+			(uYPos >= 0) && (uYPos < static_cast<int32_t>(mVolumeData.getDimension(1))) &&
+			(uZPos >= 0) && (uZPos < static_cast<int32_t>(mVolumeData.getDimension(2))))
 		{
-			mVolumeData[uXPos][uYPos][uZPos] = tValue;
+			mVolumeData(uXPos, uYPos, uZPos) = tValue;
 			return true;
 		}
 		else
@@ -101,13 +109,10 @@ public:
 		}
 	}
 	/// Sets the voxel at the position given by a 3D vector
-	bool setVoxelAt(const Vector3DInt32& v3dPos, VoxelType tValue) { return setVoxelAt(v3dPos.getX(), v3dPos.getY(), v3dPos.getZ(), tValue); }
+	bool setVoxel(const Vector3DInt32& v3dPos, VoxelType tValue) { return setVoxel(v3dPos.getX(), v3dPos.getY(), v3dPos.getZ(), tValue); }
 
 	/// Calculates approximatly how many bytes of memory the volume is currently using.
 	uint32_t calculateSizeInBytes(void) { return 0; }
-
-	/// Deprecated - I don't think we should expose this function? Let us know if you disagree...
-	//void resize(const Region& regValidRegion);
 
 private:	
 	Array<3, VoxelType> mVolumeData;
@@ -115,23 +120,22 @@ private:
 
 void TestVolumeSubclass::testExtractSurface()
 {
-	VolumeSubclass<Material8> volumeSubclass(Region(0,0,0,16,16,16));
+	Region region(0, 0, 0, 16, 16, 16);
+	VolumeSubclass<Material8> volumeSubclass(region);
 
-	for(int32_t z = 0; z < volumeSubclass.getDepth() / 2; z++)
+	for (int32_t z = 0; z < region.getDepthInVoxels() / 2; z++)
 	{
-		for(int32_t y = 0; y < volumeSubclass.getHeight(); y++)
+		for (int32_t y = 0; y < region.getHeightInVoxels(); y++)
 		{
-			for(int32_t x = 0; x < volumeSubclass.getWidth(); x++)
+			for (int32_t x = 0; x < region.getWidthInVoxels(); x++)
 			{
 				Material8 mat(1);
-				volumeSubclass.setVoxelAt(Vector3DInt32(x,y,z),mat);
+				volumeSubclass.setVoxel(Vector3DInt32(x,y,z),mat);
 			}
 		}
 	}
 
-	SurfaceMesh<PositionMaterial> result;
-	CubicSurfaceExtractor< VolumeSubclass<Material8> > cubicSurfaceExtractor(&volumeSubclass, volumeSubclass.getEnclosingRegion(), &result);
-	cubicSurfaceExtractor.execute();
+	auto result = extractCubicMesh(&volumeSubclass, region);
 
 	QCOMPARE(result.getNoOfVertices(), static_cast<uint32_t>(8));
 }

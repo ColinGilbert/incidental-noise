@@ -6,10 +6,10 @@
 #include <fstream>
 #include <iostream>
 
-#include "PolyVoxCore/CubicSurfaceExtractorWithNormals.h"
-#include "PolyVoxCore/MarchingCubesSurfaceExtractor.h"
-#include "PolyVoxCore/SurfaceMesh.h"
-#include "PolyVoxCore/SimpleVolume.h"
+#include "PolyVox/CubicSurfaceExtractor.h"
+#include "PolyVox/MarchingCubesSurfaceExtractor.h"
+#include "PolyVox/SurfaceMesh.h"
+#include "PolyVox/SimpleVolume.h"
 
 using namespace PolyVox;
 void createSphereInVolume(SimpleVolume<uint8_t>& volData, float fRadius)

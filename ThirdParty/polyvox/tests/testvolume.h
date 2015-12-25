@@ -24,14 +24,62 @@ freely, subject to the following restrictions:
 #ifndef __PolyVox_TestVolume_H__
 #define __PolyVox_TestVolume_H__
 
+#include "PolyVox/FilePager.h"
+#include "PolyVox/PagedVolume.h"
+#include "PolyVox/RawVolume.h"
+#include "PolyVox/Region.h"
+
 #include <QObject>
 
 class TestVolume: public QObject
 {
 	Q_OBJECT
+
+public:
+	TestVolume();
+	~TestVolume();
 	
-	private slots:
-		void testSize();
+private slots:
+	void testRawVolumeDirectAccessAllInternalForwards();
+	void testRawVolumeSamplersAllInternalForwards();
+	void testRawVolumeDirectAccessWithExternalForwards();
+	void testRawVolumeSamplersWithExternalForwards();
+	void testRawVolumeDirectAccessAllInternalBackwards();
+	void testRawVolumeSamplersAllInternalBackwards();
+	void testRawVolumeDirectAccessWithExternalBackwards();
+	void testRawVolumeSamplersWithExternalBackwards();
+
+	void testPagedVolumeDirectAccessAllInternalForwards();
+	void testPagedVolumeSamplersAllInternalForwards();
+	void testPagedVolumeDirectAccessWithExternalForwards();
+	void testPagedVolumeSamplersWithExternalForwards();
+	void testPagedVolumeDirectAccessAllInternalBackwards();
+	void testPagedVolumeSamplersAllInternalBackwards();
+	void testPagedVolumeDirectAccessWithExternalBackwards();
+	void testPagedVolumeSamplersWithExternalBackwards();
+
+	void testRawVolumeDirectRandomAccess();
+	void testPagedVolumeDirectRandomAccess();
+
+	void testPagedVolumeChunkLocalAccess();
+	void testPagedVolumeChunkRandomAccess();
+
+private:
+	int32_t testPagedVolumeChunkAccess(uint16_t localityMask);
+
+	static const uint16_t m_uChunkSideLength = 32;
+
+	PolyVox::Region m_regVolume;
+	PolyVox::Region m_regInternal;
+	PolyVox::Region m_regExternal;
+	PolyVox::FilePager<int32_t>* m_pFilePager;
+	PolyVox::FilePager<int32_t>* m_pFilePagerHighMem;
+
+	PolyVox::RawVolume<int32_t>* m_pRawVolume;
+	PolyVox::PagedVolume<int32_t>* m_pPagedVolume;
+	PolyVox::PagedVolume<int32_t>* m_pPagedVolumeHighMem;
+
+	PolyVox::PagedVolume<uint32_t>::Chunk* m_pPagedVolumeChunk;
 };
 
 #endif

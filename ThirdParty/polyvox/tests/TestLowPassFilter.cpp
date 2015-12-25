@@ -23,9 +23,9 @@ freely, subject to the following restrictions:
 
 #include "TestLowPassFilter.h"
 
-#include "PolyVoxCore/Density.h"
-#include "PolyVoxCore/LowPassFilter.h"
-#include "PolyVoxCore/RawVolume.h"
+#include "PolyVox/Density.h"
+#include "PolyVox/LowPassFilter.h"
+#include "PolyVox/RawVolume.h"
 
 #include <QtTest>
 
@@ -50,7 +50,7 @@ void TestLowPassFilter::testExecute()
 				if(x % 2 == 0)
 				{
 					Density8 voxel(32);
-					volData.setVoxelAt(x, y, z, voxel);
+					volData.setVoxel(x, y, z, voxel);
 				}
 			}
 		}
@@ -64,27 +64,27 @@ void TestLowPassFilter::testExecute()
 	QBENCHMARK {
 		lowPassfilter.execute();
 	}
-	QCOMPARE(resultVolume.getVoxelAt(0,0,0), Density8(4));
-	QCOMPARE(resultVolume.getVoxelAt(1,1,1), Density8(21));
-	QCOMPARE(resultVolume.getVoxelAt(2,2,2), Density8(10));
-	QCOMPARE(resultVolume.getVoxelAt(3,3,3), Density8(21));
-	QCOMPARE(resultVolume.getVoxelAt(4,4,4), Density8(10));
-	QCOMPARE(resultVolume.getVoxelAt(5,5,5), Density8(21));
-	QCOMPARE(resultVolume.getVoxelAt(6,6,6), Density8(10));
-	QCOMPARE(resultVolume.getVoxelAt(7,7,7), Density8(4));
+	QCOMPARE(resultVolume.getVoxel(0,0,0), Density8(4));
+	QCOMPARE(resultVolume.getVoxel(1,1,1), Density8(21));
+	QCOMPARE(resultVolume.getVoxel(2,2,2), Density8(10));
+	QCOMPARE(resultVolume.getVoxel(3,3,3), Density8(21));
+	QCOMPARE(resultVolume.getVoxel(4,4,4), Density8(10));
+	QCOMPARE(resultVolume.getVoxel(5,5,5), Density8(21));
+	QCOMPARE(resultVolume.getVoxel(6,6,6), Density8(10));
+	QCOMPARE(resultVolume.getVoxel(7,7,7), Density8(4));
 
 	//Test the SAT implmentation
 	QBENCHMARK {
 		lowPassfilter.executeSAT();
 	}
-	QCOMPARE(resultVolume.getVoxelAt(0,0,0), Density8(4));
-	QCOMPARE(resultVolume.getVoxelAt(1,1,1), Density8(21));
-	QCOMPARE(resultVolume.getVoxelAt(2,2,2), Density8(10));
-	QCOMPARE(resultVolume.getVoxelAt(3,3,3), Density8(21));
-	QCOMPARE(resultVolume.getVoxelAt(4,4,4), Density8(10));
-	QCOMPARE(resultVolume.getVoxelAt(5,5,5), Density8(21));
-	QCOMPARE(resultVolume.getVoxelAt(6,6,6), Density8(10));
-	QCOMPARE(resultVolume.getVoxelAt(7,7,7), Density8(4));
+	QCOMPARE(resultVolume.getVoxel(0,0,0), Density8(4));
+	QCOMPARE(resultVolume.getVoxel(1,1,1), Density8(21));
+	QCOMPARE(resultVolume.getVoxel(2,2,2), Density8(10));
+	QCOMPARE(resultVolume.getVoxel(3,3,3), Density8(21));
+	QCOMPARE(resultVolume.getVoxel(4,4,4), Density8(10));
+	QCOMPARE(resultVolume.getVoxel(5,5,5), Density8(21));
+	QCOMPARE(resultVolume.getVoxel(6,6,6), Density8(10));
+	QCOMPARE(resultVolume.getVoxel(7,7,7), Density8(4));
 }
 
 QTEST_MAIN(TestLowPassFilter)

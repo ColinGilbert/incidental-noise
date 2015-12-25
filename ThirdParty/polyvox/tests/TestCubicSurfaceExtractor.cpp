@@ -23,144 +23,167 @@ freely, subject to the following restrictions:
 
 #include "TestCubicSurfaceExtractor.h"
 
-#include "PolyVoxCore/Density.h"
-#include "PolyVoxCore/Material.h"
-#include "PolyVoxCore/MaterialDensityPair.h"
-#include "PolyVoxCore/SimpleVolume.h"
-#include "PolyVoxCore/CubicSurfaceExtractorWithNormals.h"
+#include "PolyVox/Density.h"
+#include "PolyVox/FilePager.h"
+#include "PolyVox/Material.h"
+#include "PolyVox/MaterialDensityPair.h"
+#include "PolyVox/RawVolume.h"
+#include "PolyVox/PagedVolume.h"
+#include "PolyVox/CubicSurfaceExtractor.h"
 
 #include <QtTest>
 
+#include <random>
+
 using namespace PolyVox;
 
-
-// These 'writeDensityValueToVoxel' functions provide a unified interface for writting densities to primative and class voxel types.
-// They are conceptually the inverse of the 'convertToDensity' function used by the MarchingCubesSurfaceExtractor. They probably shouldn't be part
-// of PolyVox, but they might be useful to other tests so we cold move them into a 'Tests.h' or something in the future.
-template<typename VoxelType>
-void writeDensityValueToVoxel(int valueToWrite, VoxelType& voxel)
+template<typename _VoxelType>
+class CustomIsQuadNeeded
 {
-	voxel = valueToWrite;
-}
+public:
+	typedef _VoxelType VoxelType;
 
-template<>
-void writeDensityValueToVoxel(int valueToWrite, Density8& voxel)
-{
-	voxel.setDensity(valueToWrite);
-}
+	bool operator()(VoxelType back, VoxelType front, VoxelType& materialToUse)
+	{
+		// Not a useful test - it just does something different 
+		// to the DefaultIsQuadNeeded so we can check it compiles.
+		if ((back > 1) && (front <= 1))
+		{
+			materialToUse = static_cast<VoxelType>(back);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+};
 
-template<>
-void writeDensityValueToVoxel(int valueToWrite, MaterialDensityPair88& voxel)
+// Runs the surface extractor for a given type. 
+template <typename VolumeType>
+void createAndFillVolumeWithNoise(VolumeType& volData, int32_t iVolumeSideLength, typename VolumeType::VoxelType minValue, typename VolumeType::VoxelType maxValue)
 {
-	voxel.setDensity(valueToWrite);
-}
+	// Set up a random number generator
+	std::mt19937 rng;
 
-template<typename VoxelType>
-void writeMaterialValueToVoxel(int valueToWrite, VoxelType& voxel)
-{
-	//Most types don't have a material
-	return;
-}
+	//Fill the volume with data
+	for (int32_t z = 0; z < iVolumeSideLength; z++)
+	{
+		for (int32_t y = 0; y < iVolumeSideLength; y++)
+		{
+			for (int32_t x = 0; x < iVolumeSideLength; x++)
+			{
+				if (minValue == maxValue)
+				{
+					// In this case we are filling the whole volume with a single value.
+					volData.setVoxel(x, y, z, minValue);
+				}
+				else
+				{
+					// Otherwise we write random voxel values between zero and the requested maximum
+					// We can't use std distributions because they vary between platforms (breaking tests).
+					int voxelValue = (rng() % (maxValue - minValue + 1)) + minValue; // +1 for inclusive bounds
 
-template<>
-void writeMaterialValueToVoxel(int valueToWrite, MaterialDensityPair88& voxel)
-{
-	voxel.setMaterial(valueToWrite);
+					volData.setVoxel(x, y, z, static_cast<typename VolumeType::VoxelType>(voxelValue));
+				}
+			}
+		}
+	}
 }
 
 // Runs the surface extractor for a given type. 
-template <typename VoxelType>
-void testForType(SurfaceMesh<PositionMaterialNormal>& result)
+template <typename VolumeType>
+VolumeType* createAndFillVolumeRealistic(int32_t iVolumeSideLength)
 {
-	const int32_t uVolumeSideLength = 32;
-
 	//Create empty volume
-	SimpleVolume<VoxelType> volData(Region(Vector3DInt32(0,0,0), Vector3DInt32(uVolumeSideLength-1, uVolumeSideLength-1, uVolumeSideLength-1)));
+	FilePager<uint32_t>* filePager = new FilePager<uint32_t>();
+	VolumeType* volData = new VolumeType(filePager);
 
-	for (int32_t z = 0; z < uVolumeSideLength; z++)
+	//Fill the volume with data
+	for (int32_t z = 0; z < iVolumeSideLength; z++)
 	{
-		for (int32_t y = 0; y < uVolumeSideLength; y++)
+		for (int32_t y = 0; y < iVolumeSideLength; y++)
 		{
-			for (int32_t x = 0; x < uVolumeSideLength; x++)
+			for (int32_t x = 0; x < iVolumeSideLength; x++)
 			{
-				if(x + y + z > uVolumeSideLength)
+				// Should create a checker board pattern stretched along z? This is 'realistic' in the sense
+				// that it's not empty/random data, and should allow significant decimation to be performed.
+				if ((x ^ y) & 0x01)
 				{
-					VoxelType voxelValue;
-					writeDensityValueToVoxel<VoxelType>(100, voxelValue);
-					writeMaterialValueToVoxel<VoxelType>(42, voxelValue);
-					volData.setVoxelAt(x, y, z, voxelValue);
+					volData->setVoxel(x, y, z, 0);
+				}
+				else
+				{
+					volData->setVoxel(x, y, z, 1);
 				}
 			}
 		}
 	}
 
-	CubicSurfaceExtractorWithNormals< SimpleVolume<VoxelType> > extractor(&volData, volData.getEnclosingRegion(), &result);
-	extractor.execute();
+	return volData;
 }
 
-void TestCubicSurfaceExtractor::testExecute()
+void TestCubicSurfaceExtractor::testBehaviour()
 {
-	const static uint32_t uExpectedVertices = 6624;
-	const static uint32_t uExpectedIndices = 9936;
-	const static uint32_t uMaterialToCheck = 3000;
-	const static float fExpectedMaterial = 42.0f;
-	const static uint32_t uIndexToCheck = 2000;
-	const static uint32_t uExpectedIndex = 1334;
+	int32_t iVolumeSideLength = 32;
 
-	SurfaceMesh<PositionMaterialNormal> mesh;
+	// Test with default mesh and contoller types.
+	RawVolume<uint8_t> uint8Vol(Region(0, 0, 0, iVolumeSideLength - 1, iVolumeSideLength - 1, iVolumeSideLength - 1));
+	createAndFillVolumeWithNoise(uint8Vol, 32, 0, 2);
+	auto uint8Mesh = extractCubicMesh(&uint8Vol, uint8Vol.getEnclosingRegion());
+	QCOMPARE(uint8Mesh.getNoOfVertices(), uint32_t(57544));
+	QCOMPARE(uint8Mesh.getNoOfIndices(), uint32_t(215304));
 
-	/*testForType<int8_t>(mesh);
-	QCOMPARE(mesh.getNoOfVertices(), uExpectedVertices);
-	QCOMPARE(mesh.getNoOfIndices(), uExpectedIndices);
-	QCOMPARE(mesh.getVertices()[uMaterialToCheck].getMaterial(), fNoMaterial);
+	// Test with default mesh type but user-provided controller.
+	RawVolume<int8_t> int8Vol(Region(0, 0, 0, iVolumeSideLength - 1, iVolumeSideLength - 1, iVolumeSideLength - 1));
+	createAndFillVolumeWithNoise(int8Vol, 32, 0, 2);
+	auto int8Mesh = extractCubicMesh(&int8Vol, int8Vol.getEnclosingRegion(), CustomIsQuadNeeded<int8_t>());
+	QCOMPARE(int8Mesh.getNoOfVertices(), uint32_t(29106));
+	QCOMPARE(int8Mesh.getNoOfIndices(), uint32_t(178566));
 
-	testForType<uint8_t>(mesh);
-	QCOMPARE(mesh.getNoOfVertices(), uExpectedVertices);
-	QCOMPARE(mesh.getNoOfIndices(), uExpectedIndices);
-	QCOMPARE(mesh.getVertices()[uMaterialToCheck].getMaterial(), fNoMaterial);
+	// Test with default controller but user-provided mesh.
+	RawVolume<uint32_t> uint32Vol(Region(0, 0, 0, iVolumeSideLength - 1, iVolumeSideLength - 1, iVolumeSideLength - 1));
+	createAndFillVolumeWithNoise(uint32Vol, 32, 0, 2);
+	Mesh< CubicVertex< uint32_t >, uint16_t > uint32Mesh;
+	extractCubicMeshCustom(&uint32Vol, uint32Vol.getEnclosingRegion(), &uint32Mesh);
+	QCOMPARE(uint32Mesh.getNoOfVertices(), uint16_t(57544));
+	QCOMPARE(uint32Mesh.getNoOfIndices(), uint32_t(215304));
 
-	testForType<int16_t>(mesh);
-	QCOMPARE(mesh.getNoOfVertices(), uExpectedVertices);
-	QCOMPARE(mesh.getNoOfIndices(), uExpectedIndices);
-	QCOMPARE(mesh.getVertices()[uMaterialToCheck].getMaterial(), fNoMaterial);
+	// Test with both mesh and controller being provided by the user.
+	RawVolume<int32_t> int32Vol(Region(0, 0, 0, iVolumeSideLength - 1, iVolumeSideLength - 1, iVolumeSideLength - 1));
+	createAndFillVolumeWithNoise(int32Vol, 32, 0, 2);
+	Mesh< CubicVertex< int32_t >, uint16_t > int32Mesh;
+	extractCubicMeshCustom(&int32Vol, int32Vol.getEnclosingRegion(), &int32Mesh, CustomIsQuadNeeded<int32_t>());
+	QCOMPARE(int32Mesh.getNoOfVertices(), uint16_t(29106));
+	QCOMPARE(int32Mesh.getNoOfIndices(), uint32_t(178566));
+}
 
-	testForType<uint16_t>(mesh);
-	QCOMPARE(mesh.getNoOfVertices(), uExpectedVertices);
-	QCOMPARE(mesh.getNoOfIndices(), uExpectedIndices);
-	QCOMPARE(mesh.getVertices()[uMaterialToCheck].getMaterial(), fNoMaterial);
+void TestCubicSurfaceExtractor::testEmptyVolumePerformance()
+{
+	FilePager<uint32_t>* filePager = new FilePager<uint32_t>();
+	PagedVolume<uint32_t> emptyVol(filePager);
+	createAndFillVolumeWithNoise(emptyVol, 128, 0, 0);
+	Mesh< CubicVertex< uint32_t >, uint16_t > emptyMesh;
+	QBENCHMARK{ extractCubicMeshCustom(&emptyVol, Region(32, 32, 32, 63, 63, 63), &emptyMesh); }
+	QCOMPARE(emptyMesh.getNoOfVertices(), uint16_t(0));
+}
 
-	testForType<int32_t>(mesh);
-	QCOMPARE(mesh.getNoOfVertices(), uExpectedVertices);
-	QCOMPARE(mesh.getNoOfIndices(), uExpectedIndices);
-	QCOMPARE(mesh.getVertices()[uMaterialToCheck].getMaterial(), fNoMaterial);
+void TestCubicSurfaceExtractor::testRealisticVolumePerformance()
+{
+	auto realisticVol = createAndFillVolumeRealistic< PagedVolume<uint32_t> >(128);
+	Mesh< CubicVertex< uint32_t >, uint16_t > realisticMesh;
+	QBENCHMARK{ extractCubicMeshCustom(realisticVol, Region(32, 32, 32, 63, 63, 63), &realisticMesh); }
+	QCOMPARE(realisticMesh.getNoOfVertices(), uint16_t(2176));
+}
 
-	testForType<uint32_t>(mesh);
-	QCOMPARE(mesh.getNoOfVertices(), uExpectedVertices);
-	QCOMPARE(mesh.getNoOfIndices(), uExpectedIndices);
-	QCOMPARE(mesh.getVertices()[uMaterialToCheck].getMaterial(), fNoMaterial);
-
-	testForType<float>(mesh);
-	QCOMPARE(mesh.getNoOfVertices(), uExpectedVertices);
-	QCOMPARE(mesh.getNoOfIndices(), uExpectedIndices);
-	QCOMPARE(mesh.getVertices()[uMaterialToCheck].getMaterial(), fNoMaterial);
-
-	testForType<double>(mesh);
-	QCOMPARE(mesh.getNoOfVertices(), uExpectedVertices);
-	QCOMPARE(mesh.getNoOfIndices(), uExpectedIndices);
-	QCOMPARE(mesh.getVertices()[uMaterialToCheck].getMaterial(), fNoMaterial);*/
-
-	/*testForType<Material8>(mesh);
-	QCOMPARE(mesh.getNoOfVertices(), uExpectedVertices);
-	QCOMPARE(mesh.getNoOfIndices(), uExpectedIndices);
-	QCOMPARE(mesh.getVertices()[uMaterialToCheck].getMaterial(), fNoMaterial);*/
-
-	QBENCHMARK {
-		testForType<MaterialDensityPair88>(mesh);
-	}
-	QCOMPARE(mesh.getNoOfVertices(), uExpectedVertices);
-	QCOMPARE(mesh.getNoOfIndices(), uExpectedIndices);
-	QCOMPARE(mesh.getVertices()[uMaterialToCheck].getMaterial(), fExpectedMaterial);
-	QCOMPARE(mesh.getIndices()[uIndexToCheck], uExpectedIndex);
+void TestCubicSurfaceExtractor::testNoiseVolumePerformance()
+{
+	FilePager<uint32_t>* filePager = new FilePager<uint32_t>();
+	PagedVolume<uint32_t> noiseVol(filePager);
+	createAndFillVolumeWithNoise(noiseVol, 128, 0, 2);
+	Mesh< CubicVertex< uint32_t >, uint16_t > noiseMesh;
+	QBENCHMARK{ extractCubicMeshCustom(&noiseVol, Region(32, 32, 32, 63, 63, 63), &noiseMesh); }
+	QCOMPARE(noiseMesh.getNoOfVertices(), uint16_t(57905));
 }
 
 QTEST_MAIN(TestCubicSurfaceExtractor)
