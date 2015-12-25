@@ -1,0 +1,1 @@
+This is a work-in-progress fork of Accidental Noise. The goal of this project is to speed it up and keep it better up to date with upstream libraries. Currently removes Lua functionality in order to focus on C++ core. Will put back in later(?)
